@@ -1,0 +1,2 @@
+#Wyszukiwanie VM dla konkretnej macierzy (np. STORAGE_019):
+get-vm | Get-HardDisk | ? {$_.Filename -like "*_019_*"} | sort parent | Group-Object -Property Parent | select name
