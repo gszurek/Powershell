@@ -14,7 +14,7 @@ function CreateTagCategories {
         Write-Host "Create tag category ($i/$tagsCategoriesCount): $tagCategory"
         # Tworzenie nowej kategorii tagów:
         #New-TagCategory -Name $tag -EntityType VM
-        sleep 1
+        Start-Sleep 1
         ++$i
     }
 }
@@ -59,7 +59,7 @@ function CreateAssignTag {
             # Central log
         }
 
-        sleep 1
+        Start-Sleep 1
  
         Write-Host ""
         #$vmName=Get-VM $_.name
