@@ -3,7 +3,7 @@ $src = $args[0]
 $dst = $args[1]
 $skip = $args[2]
 
-if ( ($args.Length -ne 3) -or ( $skip -eq 0 ))  {
+if ( ($args.Length -ne 3) -or ( $skip -eq 0 ) )  {
     Write-Host("Usage: $_name_ <datastore src> <datastore dst> <parallelism>
     Liczba <parallelism> musi byc wieksza od zera.")
     exit
