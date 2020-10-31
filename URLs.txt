@@ -8,3 +8,10 @@ NaviSECCli.exe -address 10.65.16.94 -User grzegorz.szurkalo -Password <pass> -Sc
 # lub
 NaviSECCli.exe -address 10.65.216.32 -User vpn.gszurkalo -Password <pass> -Scope 2 faults -list
 NaviSECCli.exe -address 10.65.16.94 -User vpn.gszurkalo -Password <pass> -Scope 2 faults -list
+
+#Hitachi CB2500
+ssh http://10.70.37.200/, show chassis status
+
+Lenovo IMM:
+ssh 10.20.233.137, #syshealth summary
+
