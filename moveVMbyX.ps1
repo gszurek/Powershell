@@ -11,8 +11,6 @@ if ( ($args.Length -ne 3) -or ( $skip -eq 0 ))  {
 
 $datastores = Get-Datastore | Select-Object -Property Name
 
-#Write-Host($args)
-
 if ( !($datastores.Name -contains $src) -or !($datastores.Name -contains $dst) ) {
     Write-Host("Usage: $_name_ <datastore src> <datastore dst> <parallelism>
     <datastore src> <datastore dst> musza byc faktycznymi datastorami.")
@@ -20,20 +18,18 @@ if ( !($datastores.Name -contains $src) -or !($datastores.Name -contains $dst) )
     exit
 }
 
-
-
-$VMs = Get-Datastore -Name $src | Get-VM | Select-Object -Property Name | Sort-Object -Property Name
+$VMs = Get-Datastore -Name $src | Get-VM | Sort-Object -Property Name
 $vmscount = $VMs.count
-
 $rest = $vmscount % $skip
-#exit
 $start = 0
-#$VMs
-#Write-Host("src: $src, dst: $dst, skip: $skip, start: $start, vmscout: $vmscount, rest: $rest ")
+Write-Output("src: $src, dst: $dst, skip: $skip, start: $start, vmscout: $vmscount, rest: $rest 
+VMs: $VMs") | Out-File -FilePath .\moveVMbyX.txt
+
 do {
-    $VMs | Select -First $skip -Skip $start |
-    Move-VM -Datastore $src -WhatIf |
-    Select Name | Out-File -FilePath "moveVMbyX.txt" -Append
+    $VMs | Select-Object -First $skip -Skip $start |
+    Move-VM -Datastore $dst | Out-File -FilePath .\moveVMbyX.txt -Append
     $start += $skip
+    Write-Host(".")
 }
 until ($start -gt ($vmscount+$rest))
+Write-Output("--------\n") | Out-File -FilePath .\moveVMbyX.txt -Append
