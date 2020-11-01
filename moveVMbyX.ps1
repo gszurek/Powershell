@@ -19,18 +19,27 @@ if ( !($datastores.Name -contains $src) -or !($datastores.Name -contains $dst) )
 
 # wolne miejsce na docelowym datastore
 # do użycia może później: Get-Datastore -Name $src | select Name,@{N='Capacity (GB)';E={[math]::Round($_.ExtensionData.Summary.Capacity/1GB,2)}},@{N='Consumed (GB)';E={[math]::Round(($_.ExtensionData.Summary.Capacity - $_.ExtensionData.Summary.FreeSpace)/1GB,2)}}
-$dst_free     = ([Math]::Round((Get-Datastore -Name $dst | Select-Object -Property FreeSpaceGB).FreeSpaceGB, 2))
-$src_used     = ([Math]::Round((Get-Datastore -Name $dst | Select-Object -Property CapacityGB).CapacityGB, 2)) - $dst_free
-$src_capacity = ([Math]::Round((Get-Datastore -Name $src | Select-Object -Property CapacityGB).CapacityGB, 2))
+$dst_free = ([Math]::Round((Get-Datastore -Name $dst | Select-Object -Property FreeSpaceGB).FreeSpaceGB, 2))
+$src_cap  = ([Math]::Round((Get-Datastore -Name $src | Select-Object -Property CapacityGB).CapacityGB, 2))
+$src_free = ([Math]::Round((Get-Datastore -Name $src | Select-Object -Property FreeSpaceGB).FreeSpaceGB, 2))
+$src_used = ($src_cap-$src_free)
+
+<#Write-Host("
+dst_free: $dst_free
+src_cap: $src_cap
+src_free: $src_free
+src_used: $src_used
+")#>
+
 
 if ( $dst_free -lt $src_used ){
     Write-Host("    !!! Ilosc danych zrodlowych jest wieksza od docelowej wolnej przestrzeni !!!")
-    Write-Host("    Ilosc wolnego miejsca datastore docelowego ($dst):      $dst_free GB
-    Ilosc danych na datastore zrodlowym ($src):             $src_used GB")
+    Write-Host("Ilosc wolnego miejsca datastore docelowego ($dst):     $dst_free GB")
+    Write-Host("Ilosc danych na datastore zrodlowym ($src):        $src_used GB")
     exit
 }else{
-    Write-Host("    Ilosc wolnego miejsca datastore docelowego ($dst):      $dst_free GB
-    Ilosc danych na datastore zrodlowym ($src):             $src_used GB")
+    Write-Host("Ilosc wolnego miejsca datastore docelowego ($dst):     $dst_free GB")
+    Write-Host("Ilosc danych na datastore zrodlowym ($src):        $src_used GB")
 }
 $go = Read-Host("Migrujemy? T/N [N]")
 if ($go -ne "T"){
@@ -47,8 +56,8 @@ src: $src, dst: $dst, skip: $skip, start: $start, vmscout: $vmscount, rest: $res
 VMs: $VMs") | Out-File -FilePath .\moveVMbyX.txt -Append
 
 do {
-    $VMs | Select-Object -First $skip -Skip $start #|
-    Move-VM -Datastore $dst -Confirm | Out-File -FilePath .\moveVMbyX.txt -Append
+    $VMs | Select-Object -First $skip -Skip $start |
+    Move-VM -Datastore $dst | Out-File -FilePath .\moveVMbyX.txt -Append
     $start += $skip
     Write-Host(".")
 }
