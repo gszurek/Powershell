@@ -6,3 +6,6 @@ get-vm | Get-HardDisk | ? {$_.Filename -like "*_019_*"} | sort parent | Group-Ob
 
 #migracja wszystkich maszyn z jednego datastore do innego
 Get-VM -Datastore vmware_010_mix_10  | Move-VM -Datastore vm_019_P4_04 -runAsync
+
+#zmiana Multipath policy na RoundRobin:
+Get-VMHost | Get-ScsiLun -LunType disk | Where {$_.MultipathPolicy -notlike "RoundRobin"} | Where {$_.CapacityGB -ge 1000} | Set-Scsilun -MultiPathPolicy RoundRobin
