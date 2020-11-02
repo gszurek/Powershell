@@ -1,5 +1,5 @@
-#  Get count of  targets, devices, and paths per hba per host
-foreach($esx in Get-VMHost -Name "azan*"){
+#  Get count of targets, devices, and paths per hba per host
+foreach($esx in Get-VMHost | Sort-Object -Property Name){
     foreach($hba in (Get-VMHostHba -VMHost $esx -Type "FibreChannel")){
         $target = ((Get-View $hba.VMhost).Config.StorageDevice.ScsiTopology.Adapter | where {$_.Adapter -eq $hba.Key}).Target
         $luns = Get-ScsiLun -Hba $hba  -LunType "disk" -ErrorAction SilentlyContinue
