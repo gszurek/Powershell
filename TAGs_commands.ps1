@@ -9,7 +9,6 @@ function DisplayMenu {
     Wybierz"
     return $command
 }
-
 function DisplayCsv {
     param($plik)
     Write-Host ("Plik: $plik")
@@ -26,24 +25,27 @@ function CreateTagCategories {
     #param ($tagsCategories)
     $i=1
     foreach ($tagCategory in $tagsCategories){
-        Write-Host "Create tag category ($i/$tagsCategoriesCount): $tagCategory"
-        # Tworzenie nowej kategorii tagów:
-        New-TagCategory -Name $tagCategory -EntityType VM #-ErrorAction Ignore
-        Start-Sleep 1
+        if($tagCategory -eq "Customer" -or $tagCategory -eq "Uwagi"){ # wstawiamy w tym przypadku CustomAttributes zamiast TAGów dla pol 'Customer' i 'Uwagi'
+            Write-Host("Custom arrtibute, do utworzenia recznie ($i/$tagsCategoriesCount): $tagCategory") -ForegroundColor Yellow
+        }else{
+            Write-Host("Tworzenie kategorii tagow ($i/$tagsCategoriesCount): $tagCategory") -NoNewline
+            # Tworzenie nowej kategorii tagów:
+            New-TagCategory -Name $tagCategory -EntityType VM -ErrorAction Ignore
+            Write-Host(" OK.") -ForegroundColor Green
+            Start-Sleep 1
+        }
         ++$i
     }
+    Write-Host
 }
-
 function CreateAssignTag {
     param($plik)
-    # Plik musi mieć średniki jako separatory kolumn
-    Write-Host $plik
-    Write-Host $tagsCategories
-    #exit
+    # Plik musi mieć średniki jako separatory kolumn !!!
     # Pomiar ilości linni - do progresu poniżej w 'for'
     $Lines = (Get-Content -Path $plik | Measure-Object -Line).Lines
     $csv = Import-Csv -Encoding UTF8 -Path $plik -Delimiter ";"
-       
+    $date = Get-Date
+    Write-Output("------------------ $date -----------------------") | Tee-Object -FilePath ".\TAGs_commands.log" -Append
     # Dla każdego wiersza pliku CSV:
     $csv | ForEach-Object {
         $count += 1
@@ -51,46 +53,41 @@ function CreateAssignTag {
         # Progres, tak dla zabawy ;)
         Write-Progress -Activity "Progress" -Status "[$($count)/$($Lines)] $progress% complete:" -PercentComplete $progress -CurrentOperation "$($_."Nazwa") - $($_."System type")"
         #lub: Write-Host "Progress[$($count)/$($Lines)]: ${progress}%"
-        if($_.Nazwa -eq ""){
-            exit
-        }
-               
-        #Write-Host "System type: $($_."System type")"
-        
-        # Dla każdej kategorii tagów tworzymy tag i przypisujemy go do danej VM:
-        foreach ($tagCategory in $tagsCategories) {
-            Write-Host "VM: $($_.Nazwa) - Tag Category: $tagCategory -> $($_.$tagCategory)"
-            #write-host "New-Tag $($_.$tagCategory) -Category $tagCategory -ErrorAction Ignore"
-            #write-host "Get-VM $($_."Nazwa") | New-TagAssignment -Tag $($_.$tagCategory) -ErrorAction Ignore"
-            if($tagCategory -eq "Customer" -or $tagCategory -eq "Uwagi"){ # wstawiamy w tym przypadku CustomAttributes zamiast TAGów
-                Write-Host "Annotation!"
-                Set-Annotation -Entity $_.Nazwa -CustomAttribute $tagCategory -Value $_.$tagCategory
-            }else{
-                New-Tag $_.$tagCategory -Category $tagCategory -ErrorAction Ignore
-                Get-VM $($_."Nazwa") | New-TagAssignment -Tag $_.$tagCategory -ErrorAction Ignore
+        if($_.Nazwa -eq "" -or $vcDomain -ne $_."Cloud name"){ #Jeśli brak nazwy VM lub 'Cloud name' jest różne od domeny obecnie podpiętego vCenter
+            Write-Host("$($_.Nazwa).$($_."Cloud name")") -NoNewline
+            Write-Host(" != $vcDomain") -ForegroundColor Red
+            #sleep 2
+        }else{
+            #Write-Host "System type: $($_."System type")"
+            # Dla każdej kategorii tagów tworzymy tag i przypisujemy go do danej VM:
+            foreach ($tagCategory in $tagsCategories) {
+                if($tagCategory -eq "Customer" -or $tagCategory -eq "Uwagi"){ # wstawiamy w tym przypadku CustomAttributes zamiast TAGów dla pol 'Customer' i 'Uwagi'
+                    Write-Output("VM: $($_.Nazwa) - CustomAttribute: $tagCategory -> $($_.$tagCategory)") | out-file -FilePath ".\TAGs_commands.log" -Append
+                    Write-Host("VM: $($_.Nazwa) - CustomAttribute: $tagCategory -> $($_.$tagCategory): ") -NoNewline
+                    Write-Host("(custom attribute): ") -NoNewline -ForegroundColor Yellow
+                    #Set-Annotation -Entity $_.Nazwa -CustomAttribute $tagCategory -Value $_.$tagCategory
+                }else{
+                    Write-Output("VM: $($_.Nazwa) - Tag Category: $tagCategory -> $($_.$tagCategory)") | out-file -FilePath ".\TAGs_commands.log" -Append
+                    Write-Host("VM: $($_.Nazwa) - Tag Category: $tagCategory -> $($_.$tagCategory): ") -NoNewline
+                    #New-Tag $_.$tagCategory -Category $tagCategory -ErrorAction Ignore
+                    #Get-VM $($_."Nazwa") | New-TagAssignment -Tag $_.$tagCategory -ErrorAction Ignore
+                }
+                Write-Host("OK.") -ForegroundColor Green
+                #Write-Host
+                #sleep 1
             }
-            Write-Host
-            #sleep 1
-
         }
-
-        #Start-Sleep 1
- 
-        Write-Host ""
-        #$vmName=Get-VM $_.name
-        #New-TagAssignment -Tag $_.tag -Entity $vmName
+        Write-Host
     }
 }
-
 function GetCurrentTags {
-    Write-Host "Current tags:"
+    Write-Host "Aktualne tagi:"
     Get-Tag           | ft
-    Write-Host "Current tags categories:"
+    Write-Host "Aktualne kategorie tagow:"
     Get-TagCategory   | ft
-    Write-Host "Current tags assignments:"
-    Get-TagAssignment | ft
+    #Write-Host "Current tags assignments:"
+    #Get-TagAssignment | ft
 }
-
 function GetCurrentNotes {
     Write-Host "VMs notes for vCenter " -NoNewline
     Write-Host $vcenter -ForegroundColor Blue -NoNewline
@@ -98,21 +95,24 @@ function GetCurrentNotes {
     Get-VM | Select-Object Notes
 }
 
-# Main:
-$vcenter = $global:defaultviserver.name
-if (!$vcenter) {
+##################### Main:
+$vcenter = $global:defaultviserver.Name
+$vcDomain = $vcenter.Substring($vcenter.Length -7)
+$vcConnected = $global:defaultviserver.IsConnected
+if (!$vcConnected) {
     Write-Host "vCenter disconnected!"
     exit
 }else{
-    Write-Host "vCenter connected: " -NoNewline
+    Write-Host "Aktualne vCenter: " -NoNewline
     Write-Host $vcenter -ForegroundColor Blue
 }
 
 if (!$args[0]){
-    Write-Host("Skladnia: TAGs_commands.ps1 <plik CMDB w formie csv>")
+    Write-Host("Skladnia: TAGs_commands.ps1 <plik CMDB w formie csv oddzielanych srednikami>")
     exit
 }else {
-    Write-Host($args[0])
+    Write-Host("Przetwarzany plik: ") -NoNewline
+    Write-Host($args[0]) -ForegroundColor Blue
 }
 
 $tagsCategories = @("System type","Backup policy","Antyvirus policy","Storage tier","Host tier","Responsible team","Cost allocation","LDAP or AD","Ansible","Central monitoring","Central log","Customer","Uwagi")
@@ -127,10 +127,14 @@ if($command -eq 0){
     CreateAssignTag($args[0])
 }elseif ($command -eq "3") { # Display categories
     Write-Host "
-    Tag categories:"
+    Kategorie tagow do utworzenia:"
     $i=1
     foreach ($tagCategory in $tagsCategories){
-        Write-Host "    $i. $tagCategory"
+        if($tagCategory -eq "Customer" -or $tagCategory -eq "Uwagi"){ # wstawiamy w tym przypadku CustomAttributes zamiast TAGów dla pol 'Customer' i 'Uwagi'
+            Write-Host("    $i. $tagCategory (custom attribute)") -ForegroundColor Yellow
+        }else{
+            Write-Host("    $i. $tagCategory")
+        }
         ++$i
     }
 }elseif ($command -eq "4") { # Show current tags
