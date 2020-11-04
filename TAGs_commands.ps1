@@ -65,12 +65,12 @@ function CreateAssignTag {
                     Write-Output("VM: $($_.Nazwa) - CustomAttribute: $tagCategory -> $($_.$tagCategory)") | out-file -FilePath ".\TAGs_commands.log" -Append
                     Write-Host("VM: $($_.Nazwa) - CustomAttribute: $tagCategory -> $($_.$tagCategory): ") -NoNewline
                     Write-Host("(custom attribute): ") -NoNewline -ForegroundColor Yellow
-                    #Set-Annotation -Entity $_.Nazwa -CustomAttribute $tagCategory -Value $_.$tagCategory
+                    Set-Annotation -Entity $_.Nazwa -CustomAttribute $tagCategory -Value $_.$tagCategory
                 }else{
                     Write-Output("VM: $($_.Nazwa) - Tag Category: $tagCategory -> $($_.$tagCategory)") | out-file -FilePath ".\TAGs_commands.log" -Append
                     Write-Host("VM: $($_.Nazwa) - Tag Category: $tagCategory -> $($_.$tagCategory): ") -NoNewline
-                    #New-Tag $_.$tagCategory -Category $tagCategory -ErrorAction Ignore
-                    #Get-VM $($_."Nazwa") | New-TagAssignment -Tag $_.$tagCategory -ErrorAction Ignore
+                    New-Tag $_.$tagCategory -Category $tagCategory -ErrorAction Ignore
+                    Get-VM $($_."Nazwa") | New-TagAssignment -Tag $_.$tagCategory -ErrorAction Ignore
                 }
                 Write-Host("OK.") -ForegroundColor Green
                 #Write-Host
