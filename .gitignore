@@ -1,2 +1,4 @@
 listVMs.txt
 moveVMbyX.txt
+*.log
+getScsiInfo.txt
