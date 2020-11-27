@@ -1,4 +1,4 @@
-function DisplayMenu { 
+function DisplayMenu { # Wyświetlenie menu i pobranie  danych od użytkownika
     $command = Read-Host "
     [0] Listuj plik csv
     [1] Tworzenie kategorii tagow ze zmiennej 'tagsCategories'
